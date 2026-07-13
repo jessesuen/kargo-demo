@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: kargo-demo
+spec:
+  args:
+  - name: service
+    value: otel-app
+  - name: namespace
+  - name: version
+  metrics:
+  - count: 4
+    successCondition: "result[0] < 5"
+    failureLimit: 0
+    interval: 15s
+    name: error-rate
+    provider:
+      prometheus:
+        address: http://prometheus-k8s.monitoring.svc.cluster.local:9090
+        query: |
+          (
+            sum(rate(http_requests_total{job="{{args.service}}",namespace="{{args.namespace}}",app_kubernetes_io_version="{{args.version}}",code=~"5.."}[1m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="{{args.service}}",namespace="{{args.namespace}}",app_kubernetes_io_version="{{args.version}}"}[1m])), 1)
+          ) * 100 or vector(0)

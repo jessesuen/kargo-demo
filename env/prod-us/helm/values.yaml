@@ -1,0 +1,21 @@
+environment: prod-us
+
+image:
+  tag: 0.1.0
+
+replicaCount: 1
+
+ingress:
+  enabled: true
+  hosts:
+    - host: kargo-demo-prod-us.demo.akuity.io
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+env:
+  LAMBDA_URL: https://m3biefzw5hh2q7z2oxff46cyzm0symnv.lambda-url.us-west-2.on.aws/
+
+serviceMonitor:
+  enabled: true
+  interval: 15s

@@ -1,0 +1,21 @@
+environment: staging
+
+image:
+  tag: 0.2.0
+
+replicaCount: 2
+
+ingress:
+  enabled: true
+  hosts:
+    - host: kargo-demo-staging.demo.akuity.io
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+env:
+  LAMBDA_URL: https://bpfsfuc3fgbvj45pb56qq25bnu0hqmeg.lambda-url.us-west-2.on.aws/
+
+serviceMonitor:
+  enabled: true
+  interval: 15s

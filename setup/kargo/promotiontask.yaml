@@ -1,0 +1,73 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: PromotionTask
+metadata:
+  name: promote
+  namespace: kargo-demo
+spec:
+  vars:
+  - name: image
+    value: ghcr.io/jessesuen/otel-app
+  - name: lambda
+    value: 541216676946.dkr.ecr.us-west-2.amazonaws.com/lambda-demo/lambda-app
+  - name: repoURL
+    value: https://github.com/jessesuen/kargo-demo.git
+  - name: branch
+    value: main
+
+  steps:
+  - uses: git-clone
+    config:
+      repoURL: ${{ vars.repoURL }}
+      checkout:
+      - branch: ${{ vars.branch }}
+        path: ./src
+  - uses: hcl-update
+    config:
+      path: ./src/env/${{ ctx.stage }}/terraform/env.auto.tfvars
+      updates:
+      - key: image_uri
+        value: ${{ vars.lambda }}:${{ imageFrom(vars.lambda).Tag }}
+  - uses: tf-apply
+    as: tf-apply
+    config:
+      dir: ./src/env/${{ ctx.stage }}/terraform
+      # plan: ./plan.tfplan
+      env:
+      - name: AWS_REGION
+        value: us-west-2
+      - name: AWS_ACCESS_KEY_ID
+        value: ${{ secret('lambda-demo').awsAccessKeyID }}
+      - name: AWS_SECRET_ACCESS_KEY
+        value: ${{ secret('lambda-demo').awsSecretAccessKey }}
+  - uses: tf-output
+    as: tf-output
+    config:
+      dir: ./src/env/${{ ctx.stage }}/terraform
+  - uses: yaml-update
+    config:
+      path: ./src/env/${{ ctx.stage }}/helm/values.yaml
+      updates:
+      - key: image.tag
+        value: ${{ imageFrom( vars.image ).Tag }}
+      - key: env.LAMBDA_URL
+        value: ${{ task.outputs['tf-output'].lambda_url.value }}
+  - uses: git-commit
+    as: commit
+    config:
+      path: ./src
+      message: |
+        Update ${{ ctx.stage }} to ${{ ctx.targetFreight.name }}
+
+        K8s Image: ${{ vars.image }}:${{ imageFrom(vars.image).Tag }}
+        Lambda: ${{ vars.lambda }}:${{ imageFrom(vars.lambda).Tag }}
+
+        Terraform Apply:
+        ${{ task.outputs['tf-apply'].result }}
+
+  - uses: git-push
+    config:
+      path: ./src
+  - uses: argocd-update
+    config:
+      apps:
+      - name: kargo-demo-${{ ctx.stage }}

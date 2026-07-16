@@ -1,7 +1,7 @@
 environment: dev
 
 image:
-  tag: 0.4.0
+  tag: 0.5.0
 
 replicaCount: 1
 
@@ -14,7 +14,7 @@ ingress:
           pathType: ImplementationSpecific
 
 env:
-  LAMBDA_URL: https://nmz23yuz26b74euzq73vcs2lte0wjzwv.lambda-url.us-west-2.on.aws/
+  LAMBDA_URL: https://oo2355k6g5cj2c2a5jpvcllvpy0tazjk.lambda-url.us-west-2.on.aws/
 
 serviceMonitor:
   enabled: true
